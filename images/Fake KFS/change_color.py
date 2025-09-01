@@ -14,6 +14,8 @@ def change_blue_to_color(input_dir, output_dir, new_color):
 
     # Iterate through all files in the input directory
     for filename in os.listdir(input_dir):
+        if filename.__contains__("Red"):
+            pass
         if filename.endswith(('.png', '.jpg', '.jpeg')):
             img_path = os.path.join(input_dir, filename)
             img = Image.open(img_path)
@@ -27,10 +29,11 @@ def change_blue_to_color(input_dir, output_dir, new_color):
             for item in data:
                 # print(item)
                 # Change blue shades to the new color
-                if is_blue(item):
-                    new_data.append(new_color + (item[3],))  # Keep the alpha channel
-                else:
-                    new_data.append(item)
+                # if is_blue(item):
+                new_data.append((int(item[2]*1.5), item[1], item[0], item[3])) # swap r and b
+                    # new_data.append(new_color + (item[3],))  # Keep the alpha channel
+                # else:
+                    # new_data.append(item)
 
             # Update image data and save the modified image
             img.putdata(new_data)

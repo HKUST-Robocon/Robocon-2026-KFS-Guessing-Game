@@ -14,6 +14,8 @@ def change_red_to_color(input_dir, output_dir, new_color):
 
     # Iterate through all files in the input directory
     for filename in os.listdir(input_dir):
+        if filename.__contains__("Red"):
+            pass
         if filename.endswith(('.png', '.jpg', '.jpeg')):
             img_path = os.path.join(input_dir, filename)
             img = Image.open(img_path)
@@ -27,7 +29,8 @@ def change_red_to_color(input_dir, output_dir, new_color):
             for item in data:
                 # Change red shades to the new color
                 if is_red(item):
-                    new_data.append(new_color + (item[3],))  # Keep the alpha channel
+                    new_data.append((item[2], item[1], int(item[0]*0.67), item[3])) # swap r and b
+                    # new_data.append(new_color + (item[3],))  # Keep the alpha channel
                 else:
                     new_data.append(item)
 

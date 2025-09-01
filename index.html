@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KFS Guessing Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .pulse-green {
+            animation: pulse-green 0.6s ease-in-out;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                background-color: rgb(34, 197, 94);
+            }
+
+            50% {
+                background-color: rgb(22, 163, 74);
+            }
+
+            100% {
+                background-color: rgb(34, 197, 94);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">KFS Guessing Game</h1>
+            <p class="text-gray-600 dark:text-gray-400">Can you identify the correct KFS type?</p>
+        </div>
+
+        <!-- Score Display -->
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-6 text-center">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <div class="text-2xl font-bold text-green-600" id="correct-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Correct</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-red-600" id="incorrect-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Incorrect</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-primary" id="total-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Total</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Display -->
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
+            <div
+                class="aspect-square w-full max-w-md mx-auto overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <img id="game-image" class="w-full h-full object-cover transition-all duration-300" alt="KFS Image"
+                    style="display: none;">
+                <div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>
+            </div>
+        </div>
+
+        <!-- Guess Buttons -->
+        <div class="grid grid-cols-1 gap-3 mb-6">
+            <button id="r1-btn"
+                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                onclick="makeGuess('R1 KFS')">
+                R1 KFS
+            </button>
+            <button id="r2-btn"
+                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                onclick="makeGuess('R2 KFS')">
+                R2 KFS
+            </button>
+            <button id="fake-btn"
+                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                onclick="makeGuess('Fake KFS')">
+                Fake KFS
+            </button>
+        </div>
+
+        <!-- Feedback -->
+        <div id="feedback" class="text-center mb-6 h-8 flex items-center justify-center">
+            <!-- Feedback messages will appear here -->
+        </div>
+
+        <!-- Next Button -->
+        <div class="text-center">
+            <button id="next-btn"
+                class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                onclick="loadNextImage()" style="display: none;">
+                Next Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode setup
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Game state
+        let gameState = {
+            correctScore: 0,
+            incorrectScore: 0,
+            currentImageType: null,
+            gameActive: false
+        };
+
+        // Populate the imageSet
+        const imageSet = [];
+
+        // Base path for the images (relative to the HTML file)
+        const basePath = "./images/";
+
+        for (let i = 1; i <= 1; i++) {
+            imageSet.push({
+                url: `${basePath}R1 KFS/R1 Red${i}.png`,
+                type: 'R1 KFS'
+            });
+        }
+
+        for (let i = 1; i <= 1; i++) {
+            imageSet.push({
+                url: `${basePath}R1 KFS/R1 Blue${i}.png`,
+                type: 'R1 KFS'
+            });
+        }
+
+
+        for (let i = 1; i <= 15; i++) {
+            imageSet.push({
+                url: `${basePath}R2 KFS/R2 Red${i}.png`,
+                type: 'R2 KFS'
+            });
+        }
+
+
+        // for (let i = 1; i <= 15; i++) {
+        //     imageSet.push({
+        //         url: `${basePath}R2 KFS/R2 Blue${i}.png`,
+        //         type: 'R2 KFS'
+        //     });
+        // }
+
+        // for (let i = 1; i <= 15; i++) {
+        //     imageSet.push({
+        //         url: `${basePath}Fake KFS/Fake Red${i}.png`,
+        //         type: 'Fake KFS'
+        //     });
+        // }
+
+        for (let i = 1; i <= 15; i++) {
+            imageSet.push({
+                url: `${basePath}Fake KFS/Fake Blue${i}.png`,
+                type: 'Fake KFS'
+            });
+        }
+
+        console.log(imageSet); // Debugging: Check the generated imageSet
+
+
+        // DOM elements
+        const gameImage = document.getElementById('game-image');
+        const loadingText = document.getElementById('loading-text');
+        const correctScoreEl = document.getElementById('correct-score');
+        const incorrectScoreEl = document.getElementById('incorrect-score');
+        const totalScoreEl = document.getElementById('total-score');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const guessButtons = [
+            document.getElementById('r1-btn'),
+            document.getElementById('r2-btn'),
+            document.getElementById('fake-btn')
+        ];
+
+        function updateScore() {
+            correctScoreEl.textContent = gameState.correctScore;
+            incorrectScoreEl.textContent = gameState.incorrectScore;
+            totalScoreEl.textContent = gameState.correctScore + gameState.incorrectScore;
+        }
+
+        function showFeedback(message, isCorrect) {
+            feedbackEl.innerHTML = `
+                <div class="text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function disableGuessButtons() {
+            guessButtons.forEach(btn => {
+                btn.disabled = true;
+            });
+            gameState.gameActive = false;
+        }
+
+        function enableGuessButtons() {
+            guessButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('bg-green-600', 'bg-red-600');
+                btn.classList.add('bg-primary', 'hover:bg-purple-700');
+            });
+            gameState.gameActive = true;
+        }
+
+        function makeGuess(guessedType) {
+            if (!gameState.gameActive) return;
+
+            disableGuessButtons();
+
+            const isCorrect = guessedType === gameState.currentImageType;
+
+            if (isCorrect) {
+                gameState.correctScore++;
+                showFeedback(`Correct! It was ${gameState.currentImageType}`, true);
+
+                // Highlight correct button
+                const correctBtn = guessButtons.find(btn => btn.textContent.trim() === guessedType);
+                correctBtn.classList.remove('bg-primary', 'hover:bg-purple-700');
+                correctBtn.classList.add('bg-green-600');
+                correctBtn.classList.add('pulse-green');
+            } else {
+                gameState.incorrectScore++;
+                showFeedback(`Incorrect! It was ${gameState.currentImageType}`, false);
+
+                // Highlight incorrect button and shake
+                const incorrectBtn = guessButtons.find(btn => btn.textContent.trim() === guessedType);
+                incorrectBtn.classList.remove('bg-primary', 'hover:bg-purple-700');
+                incorrectBtn.classList.add('bg-red-600');
+                incorrectBtn.classList.add('shake');
+
+                // Highlight correct button
+                const correctBtn = guessButtons.find(btn => btn.textContent.trim() === gameState.currentImageType);
+                correctBtn.classList.remove('bg-primary', 'hover:bg-purple-700');
+                correctBtn.classList.add('bg-green-600');
+            }
+
+            updateScore();
+            nextBtn.style.display = 'block';
+        }
+
+        function loadNextImage() {
+            // Reset UI
+            feedbackEl.innerHTML = '';
+            nextBtn.style.display = 'none';
+            gameImage.style.display = 'none';
+            loadingText.style.display = 'block';
+
+            // Remove animation classes
+            guessButtons.forEach(btn => {
+                btn.classList.remove('shake', 'pulse-green');
+            });
+
+            // Select random image
+            const randomImage = imageSet[Math.floor(Math.random() * imageSet.length)];
+            gameState.currentImageType = randomImage.type;
+
+            // Load image
+            const img = new Image();
+            img.onload = function () {
+                gameImage.src = randomImage.url;
+                gameImage.style.display = 'block';
+                loadingText.style.display = 'none';
+                enableGuessButtons();
+            };
+            img.onerror = function () {
+                loadingText.textContent = 'Error loading image. Click Next to try again.';
+                nextBtn.style.display = 'block';
+            };
+            img.src = randomImage.url;
+        }
+
+        // Initialize game
+        updateScore();
+        loadNextImage();
+    </script>
+</body>
+
+</html>

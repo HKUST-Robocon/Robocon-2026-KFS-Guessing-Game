@@ -59,17 +59,18 @@
     </style>
 </head>
 
-<body class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-200">
-    <div class="container mx-auto px-4 py-8 max-w-2xl">
+<body class="bg-white dark:bg-gray-900 h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-2xl h-full flex flex-col">
         <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">KFS Guessing Game</h1>
+        <div class="text-center mb-2 h-[10%] flex flex-col justify-center">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Robocon 2026 KFS Guessing Game</h1>
             <p class="text-gray-600 dark:text-gray-400">Can you identify the correct KFS type?</p>
         </div>
 
         <!-- Score Display -->
-        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-6 text-center">
-            <div class="grid grid-cols-3 gap-4">
+        <div
+            class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-2 text-center h-[10%] flex items-center justify-center">
+            <div class="grid grid-cols-3 gap-4 w-full">
                 <div>
                     <div class="text-2xl font-bold text-green-600" id="correct-score">0</div>
                     <div class="text-sm text-gray-600 dark:text-gray-400">Correct</div>
@@ -86,46 +87,34 @@
         </div>
 
         <!-- Image Display -->
-        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6">
-            <div
-                class="aspect-square w-full max-w-md mx-auto overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                <img id="game-image" class="w-full h-full object-cover transition-all duration-300" alt="KFS Image"
-                    style="display: none;">
-                <div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>
-            </div>
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-2 flex items-center justify-center h-[60%]">
+            <img id="game-image" class="h-[50vh] max-w-full object-contain transition-all duration-300" alt="KFS Image"
+                style="display: none;">
+            <div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>
         </div>
 
         <!-- Guess Buttons -->
-        <div class="grid grid-cols-1 gap-3 mb-6">
+        <div class="grid grid-cols-3 gap-3 mb-2 h-[10%]">
             <button id="r1-btn"
-                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                class="w-full h-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
                 onclick="makeGuess('R1 KFS')">
                 R1 KFS
             </button>
             <button id="r2-btn"
-                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                class="w-full h-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
                 onclick="makeGuess('R2 KFS')">
                 R2 KFS
             </button>
             <button id="fake-btn"
-                class="w-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
+                class="w-full h-full py-4 px-6 bg-primary hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-base"
                 onclick="makeGuess('Fake KFS')">
                 Fake KFS
             </button>
         </div>
 
         <!-- Feedback -->
-        <div id="feedback" class="text-center mb-6 h-8 flex items-center justify-center">
+        <div id="feedback" class="text-center h-[10%] flex items-center justify-center">
             <!-- Feedback messages will appear here -->
-        </div>
-
-        <!-- Next Button -->
-        <div class="text-center">
-            <button id="next-btn"
-                class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
-                onclick="loadNextImage()" style="display: none;">
-                Next Image
-            </button>
         </div>
     </div>
 
@@ -170,7 +159,6 @@
             });
         }
 
-
         for (let i = 1; i <= 15; i++) {
             imageSet.push({
                 url: `${basePath}R2 KFS/R2 Red${i}.png`,
@@ -209,7 +197,6 @@
         const incorrectScoreEl = document.getElementById('incorrect-score');
         const totalScoreEl = document.getElementById('total-score');
         const feedbackEl = document.getElementById('feedback');
-        const nextBtn = document.getElementById('next-btn');
         const guessButtons = [
             document.getElementById('r1-btn'),
             document.getElementById('r2-btn'),
@@ -279,13 +266,14 @@
             }
 
             updateScore();
-            nextBtn.style.display = 'block';
+
+            // Automatically load the next image after 1 second
+            setTimeout(loadNextImage, 1000);
         }
 
         function loadNextImage() {
             // Reset UI
             feedbackEl.innerHTML = '';
-            nextBtn.style.display = 'none';
             gameImage.style.display = 'none';
             loadingText.style.display = 'block';
 
@@ -307,8 +295,7 @@
                 enableGuessButtons();
             };
             img.onerror = function () {
-                loadingText.textContent = 'Error loading image. Click Next to try again.';
-                nextBtn.style.display = 'block';
+                loadingText.textContent = 'Error loading image. Try again.';
             };
             img.src = randomImage.url;
         }

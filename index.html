@@ -56,6 +56,20 @@
                 background-color: rgb(34, 197, 94);
             }
         }
+
+        /* Overlay styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
     </style>
 </head>
 
@@ -118,6 +132,101 @@
         </div>
     </div>
 
+    <!-- Corner Buttons -->
+    <button id="answer-key-btn"
+        class="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+        onclick="showAnswerKey()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+    </button>
+
+    <button id="settings-btn"
+        class="fixed top-4 left-4 bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+        onclick="showSettings()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+            </path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z">
+            </path>
+        </svg>
+    </button>
+
+    <!-- Answer Key Overlay -->
+    <div id="answer-overlay" class="overlay" style="display: none;">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-4xl max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">KFS Answer Key</h2>
+                <button onclick="hideAnswerKey()"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <img src="images/answer.png" alt="KFS Answer Key" class="w-full rounded-lg">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 text-center">
+                Images from ABU Robocon 2026 Rulebook V.0 Appendix 4.3 - Kung Fu Scroll Recognition Patterns<br>
+                This game is developed by Dicaprio, a graduated HKUST Robocon 2024 Software Senior
+            </p>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="overlay" style="display: none;">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
+                <button onclick="hideSettings()"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        R1 KFS Probability: <span id="r1-value">20%</span>
+                    </label>
+                    <input type="range" id="r1-slider" min="0" max="100" value="20"
+                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                        oninput="updateProbability('r1', this.value)">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        R2 KFS Probability: <span id="r2-value">40%</span>
+                    </label>
+                    <input type="range" id="r2-slider" min="0" max="100" value="40"
+                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                        oninput="updateProbability('r2', this.value)">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Fake KFS Probability: <span id="fake-value">40%</span>
+                    </label>
+                    <input type="range" id="fake-slider" min="0" max="100" value="40"
+                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                        oninput="updateProbability('fake', this.value)">
+                </div>
+
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                        <span>Total:</span>
+                        <span id="total-probability">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Dark mode setup
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -136,7 +245,15 @@
             correctScore: 0,
             incorrectScore: 0,
             currentImageType: null,
+            currentImageUrl: null,
             gameActive: false
+        };
+
+        // Probability settings
+        let probabilities = {
+            'R1 KFS': 20,
+            'R2 KFS': 40,
+            'Fake KFS': 40
         };
 
         // Populate the imageSet
@@ -187,8 +304,7 @@
             });
         }
 
-        console.log(imageSet); // Debugging: Check the generated imageSet
-
+        // console.log(imageSet); // Debugging: Check the generated imageSet
 
         // DOM elements
         const gameImage = document.getElementById('game-image');
@@ -267,38 +383,115 @@
 
             updateScore();
 
+            console.log(`Image: ${gameState.currentImageUrl}, Guessed: ${guessedType}, Actual: ${gameState.currentImageType}, Correct: ${isCorrect}`);
+
             // Automatically load the next image after 1 second
             setTimeout(loadNextImage, 1000);
+        }
+
+        function selectImageByProbability() {
+            const rand = Math.random() * 100;
+            let cumulative = 0;
+
+            for (const [type, probability] of Object.entries(probabilities)) {
+                cumulative += probability;
+                if (rand <= cumulative) {
+                    const filteredImages = imageSet.filter(img => img.type === type);
+                    return filteredImages[Math.floor(Math.random() * filteredImages.length)];
+                }
+            }
+
+            // Fallback
+            return imageSet[Math.floor(Math.random() * imageSet.length)];
         }
 
         function loadNextImage() {
             // Reset UI
             feedbackEl.innerHTML = '';
-            gameImage.style.display = 'none';
-            loadingText.style.display = 'block';
+            const imageContainer = document.querySelector('.bg-gray-100.dark\\:bg-gray-800.rounded-lg.p-4.mb-2.flex.items-center.justify-center.h-\\[60\\%\\]');
+            imageContainer.innerHTML = '<div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>';
 
             // Remove animation classes
             guessButtons.forEach(btn => {
                 btn.classList.remove('shake', 'pulse-green');
             });
 
-            // Select random image
-            const randomImage = imageSet[Math.floor(Math.random() * imageSet.length)];
-            gameState.currentImageType = randomImage.type;
+            // Select image based on probability
+            const selectedImage = selectImageByProbability();
+            gameState.currentImageType = selectedImage.type;
+            gameState.currentImageUrl = selectedImage.url;
 
-            // Load image
+            // Load regular image
             const img = new Image();
             img.onload = function () {
-                gameImage.src = randomImage.url;
-                gameImage.style.display = 'block';
-                loadingText.style.display = 'none';
+                imageContainer.innerHTML = `<img id="game-image" class="h-[50vh] max-w-full object-contain transition-all duration-300" alt="KFS Image" src="${selectedImage.url}">`;
                 enableGuessButtons();
             };
             img.onerror = function () {
-                loadingText.textContent = 'Error loading image. Try again.';
+                imageContainer.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Error loading image. Try again.</div>';
             };
-            img.src = randomImage.url;
+            img.src = selectedImage.url;
         }
+
+        // Overlay functions
+        function showAnswerKey() {
+            document.getElementById('answer-overlay').style.display = 'flex';
+        }
+
+        function hideAnswerKey() {
+            document.getElementById('answer-overlay').style.display = 'none';
+        }
+
+        function showSettings() {
+            document.getElementById('settings-overlay').style.display = 'flex';
+        }
+
+        function hideSettings() {
+            document.getElementById('settings-overlay').style.display = 'none';
+        }
+
+        function updateProbability(type, value) {
+            const typeMap = {
+                'r1': 'R1 KFS',
+                'r2': 'R2 KFS',
+                'fake': 'Fake KFS'
+            };
+
+            probabilities[typeMap[type]] = parseInt(value);
+
+            // Update display
+            document.getElementById(`${type}-value`).textContent = `${value}%`;
+
+            // Calculate total
+            const total = Object.values(probabilities).reduce((sum, val) => sum + val, 0);
+            document.getElementById('total-probability').textContent = `${total}%`;
+
+            // Update other sliders to maintain balance (optional)
+            if (total > 100) {
+                const excess = total - 100;
+                const others = Object.keys(typeMap).filter(k => k !== type);
+                others.forEach(otherType => {
+                    const currentVal = probabilities[typeMap[otherType]];
+                    const reduction = Math.min(currentVal, excess / others.length);
+                    probabilities[typeMap[otherType]] = Math.max(0, currentVal - reduction);
+                    document.getElementById(`${otherType}-slider`).value = probabilities[typeMap[otherType]];
+                    document.getElementById(`${otherType}-value`).textContent = `${probabilities[typeMap[otherType]]}%`;
+                });
+
+                // Recalculate total
+                const newTotal = Object.values(probabilities).reduce((sum, val) => sum + val, 0);
+                document.getElementById('total-probability').textContent = `${newTotal}%`;
+            }
+        }
+
+        // Close overlays when clicking outside
+        document.getElementById('answer-overlay').addEventListener('click', function (e) {
+            if (e.target === this) hideAnswerKey();
+        });
+
+        document.getElementById('settings-overlay').addEventListener('click', function (e) {
+            if (e.target === this) hideSettings();
+        });
 
         // Initialize game
         updateScore();

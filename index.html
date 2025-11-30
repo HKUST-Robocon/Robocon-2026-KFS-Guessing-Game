@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KFS Guessing Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -70,6 +71,10 @@
             align-items: center;
             z-index: 1000;
         }
+
+        #game-canvas {
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 
@@ -78,7 +83,8 @@
         <!-- Header -->
         <div class="text-center mb-2 h-[10%] flex flex-col justify-center">
             <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Robocon 2026 KFS Guessing Game</h1>
-            <p class="text-gray-600 dark:text-gray-400">Can you identify the correct KFS type?</p>
+            <p class="text-gray-600 dark:text-gray-400">Can you identify the correct KFS type? Click and drag to rotate
+                the view!</p>
         </div>
 
         <!-- Score Display -->
@@ -100,11 +106,10 @@
             </div>
         </div>
 
-        <!-- Image Display -->
-        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-2 flex items-center justify-center h-[60%]">
-            <img id="game-image" class="h-[50vh] max-w-full object-contain transition-all duration-300" alt="KFS Image"
-                style="display: none;">
-            <div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>
+        <!-- 3D Scene Display -->
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-2 flex items-center justify-center h-[60%]"
+            id="canvas-container">
+            <div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading 3D scene...</div>
         </div>
 
         <!-- Guess Buttons -->
@@ -240,6 +245,13 @@
             }
         });
 
+        // Three.js variables
+        let scene, camera, renderer, cube, controls;
+        let isMouseDown = false;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let currentRotationX = 0, currentRotationY = 0;
+
         // Game state
         let gameState = {
             correctScore: 0,
@@ -261,6 +273,7 @@
 
         // Base path for the images (relative to the HTML file)
         const basePath = "./images/";
+        // const basePath = "https://hkust-robocon.github.io/Robocon-2026-KFS-Guessing-Game/images/";
 
         for (let i = 1; i <= 1; i++) {
             imageSet.push({
@@ -304,10 +317,8 @@
             });
         }
 
-        // console.log(imageSet); // Debugging: Check the generated imageSet
-
         // DOM elements
-        const gameImage = document.getElementById('game-image');
+        const canvasContainer = document.getElementById('canvas-container');
         const loadingText = document.getElementById('loading-text');
         const correctScoreEl = document.getElementById('correct-score');
         const incorrectScoreEl = document.getElementById('incorrect-score');
@@ -318,6 +329,191 @@
             document.getElementById('r2-btn'),
             document.getElementById('fake-btn')
         ];
+
+        function init3DScene() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf3f4f6); // Light gray background
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera.position.set(0, 3, 5);
+            camera.lookAt(0, 1, 0);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Create floor
+            const floorGeometry = new THREE.PlaneGeometry(10, 10);
+            const floorMaterial = new THREE.MeshLambertMaterial({
+                color: 0xe5e7eb,
+                transparent: true,
+                opacity: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Create lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Add canvas to container
+            canvasContainer.innerHTML = '';
+            canvasContainer.appendChild(renderer.domElement);
+
+            // Set initial size
+            resizeRenderer();
+
+            // Add mouse controls
+            setupMouseControls();
+
+            // Animation loop
+            animate();
+        }
+
+        function setupMouseControls() {
+            const canvas = renderer.domElement;
+
+            canvas.addEventListener('mousedown', onMouseDown, false);
+            canvas.addEventListener('mousemove', onMouseMove, false);
+            canvas.addEventListener('mouseup', onMouseUp, false);
+            canvas.addEventListener('touchstart', onTouchStart, false);
+            canvas.addEventListener('touchmove', onTouchMove, false);
+            canvas.addEventListener('touchend', onTouchEnd, false);
+        }
+
+        function onMouseDown(event) {
+            isMouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+
+            const deltaX = event.clientX - mouseX;
+            const deltaY = event.clientY - mouseY;
+
+            targetRotationY += deltaX * 0.01;
+            targetRotationX += deltaY * 0.01;
+
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+        function onMouseUp(event) {
+            isMouseDown = false;
+        }
+
+        function onTouchStart(event) {
+            if (event.touches.length === 1) {
+                isMouseDown = true;
+                mouseX = event.touches[0].clientX;
+                mouseY = event.touches[0].clientY;
+            }
+        }
+
+        function onTouchMove(event) {
+            if (!isMouseDown || event.touches.length !== 1) return;
+
+            event.preventDefault();
+
+            const deltaX = event.touches[0].clientX - mouseX;
+            const deltaY = event.touches[0].clientY - mouseY;
+
+            targetRotationY += deltaX * 0.01;
+            targetRotationX += deltaY * 0.01;
+
+            mouseX = event.touches[0].clientX;
+            mouseY = event.touches[0].clientY;
+        }
+
+        function onTouchEnd(event) {
+            isMouseDown = false;
+        }
+
+        function create3DCube(imageUrl) {
+            // Remove existing cube
+            if (cube) {
+                scene.remove(cube);
+            }
+
+            // Create cube geometry
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+
+            // Load texture
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(imageUrl, function (texture) {
+                // Create materials for each face with the same texture
+                const materials = [
+                    new THREE.MeshLambertMaterial({ map: texture }), // Right
+                    new THREE.MeshLambertMaterial({ map: texture }), // Left
+                    new THREE.MeshLambertMaterial({ map: texture }), // Top
+                    new THREE.MeshLambertMaterial({ map: texture }), // Bottom
+                    new THREE.MeshLambertMaterial({ map: texture }), // Front
+                    new THREE.MeshLambertMaterial({ map: texture })  // Back
+                ];
+
+                cube = new THREE.Mesh(geometry, materials);
+
+                // Random position on the floor
+                cube.position.x = (Math.random() - 0.5) * 6;
+                cube.position.y = 1; // Half the height of the cube above the floor
+                cube.position.z = (Math.random() - 0.5) * 6;
+
+                // Random horizontal rotation
+                cube.rotation.y = Math.random() * Math.PI * 2;
+
+                cube.castShadow = true;
+                scene.add(cube);
+
+                enableGuessButtons();
+            }, undefined, function (error) {
+                console.error('Error loading texture:', error);
+                loadingText.textContent = 'Error loading texture. Try again.';
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smooth rotation
+            currentRotationX += (targetRotationX - currentRotationX) * 0.05;
+            currentRotationY += (targetRotationY - currentRotationY) * 0.05;
+
+            // Apply rotation to camera around the scene center
+            const radius = 7;
+            camera.position.x = Math.sin(currentRotationY) * radius;
+            camera.position.z = Math.cos(currentRotationY) * radius;
+            camera.position.y = 3 + Math.sin(currentRotationX) * 2;
+            camera.lookAt(0, 1, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        function resizeRenderer() {
+            const container = canvasContainer;
+            const rect = container.getBoundingClientRect();
+            const width = rect.width - 32; // Account for padding
+            const height = rect.height - 32;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        window.addEventListener('resize', resizeRenderer);
 
         function updateScore() {
             correctScoreEl.textContent = gameState.correctScore;
@@ -385,8 +581,8 @@
 
             console.log(`Image: ${gameState.currentImageUrl}, Guessed: ${guessedType}, Actual: ${gameState.currentImageType}, Correct: ${isCorrect}`);
 
-            // Automatically load the next image after 1 second
-            setTimeout(loadNextImage, 1000);
+            // Automatically load the next image after 2 seconds
+            setTimeout(loadNextImage, 2000);
         }
 
         function selectImageByProbability() {
@@ -408,8 +604,8 @@
         function loadNextImage() {
             // Reset UI
             feedbackEl.innerHTML = '';
-            const imageContainer = document.querySelector('.bg-gray-100.dark\\:bg-gray-800.rounded-lg.p-4.mb-2.flex.items-center.justify-center.h-\\[60\\%\\]');
-            imageContainer.innerHTML = '<div id="loading-text" class="text-gray-500 dark:text-gray-400">Loading image...</div>';
+            loadingText.style.display = 'block';
+            // canvasContainer.appendChild(loadingText);
 
             // Remove animation classes
             guessButtons.forEach(btn => {
@@ -421,16 +617,11 @@
             gameState.currentImageType = selectedImage.type;
             gameState.currentImageUrl = selectedImage.url;
 
-            // Load regular image
-            const img = new Image();
-            img.onload = function () {
-                imageContainer.innerHTML = `<img id="game-image" class="h-[50vh] max-w-full object-contain transition-all duration-300" alt="KFS Image" src="${selectedImage.url}">`;
-                enableGuessButtons();
-            };
-            img.onerror = function () {
-                imageContainer.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Error loading image. Try again.</div>';
-            };
-            img.src = selectedImage.url;
+            // Hide loading text and create 3D cube
+            setTimeout(() => {
+                loadingText.style.display = 'none';
+                create3DCube(selectedImage.url);
+            }, 500);
         }
 
         // Overlay functions
@@ -495,6 +686,7 @@
 
         // Initialize game
         updateScore();
+        init3DScene();
         loadNextImage();
     </script>
 </body>

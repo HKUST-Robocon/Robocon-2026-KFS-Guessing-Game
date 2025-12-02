@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KFS Grid Guessing Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .grid-cell {
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Base cell colors (will be overridden by JavaScript for dynamic coloring) */
+        /* Positions 10, 0, 2 (user cells 2,10,12) */
+        .grid-cell[data-index="10"], .grid-cell[data-index="0"], .grid-cell[data-index="2"] {
+            background-color: rgb(41, 82, 16);
+        }
+
+        /* Positions 9, 11, 7, 3, 5, 1 (user cells 1,3,5,7,9,11) */
+        .grid-cell[data-index="9"], .grid-cell[data-index="11"], .grid-cell[data-index="7"], .grid-cell[data-index="3"], .grid-cell[data-index="5"], .grid-cell[data-index="1"] {
+            background-color: rgb(42, 113, 56);
+        }
+
+        .grid-cell:hover {
+            filter: brightness(0.9);
+        }
+
+        .grid-cell.clicked {
+            background-color: #dc2626;
+            border-color: #b91c1c;
+        }
+
+        .grid-cell.correct {
+            background-color: #059669;
+            border-color: #047857;
+            animation: pulse-success 1s;
+        }
+
+        .grid-cell img {
+            max-width: 29.17%;
+            max-height: 29.17%;
+            object-fit: contain;
+        }
+
+        @keyframes pulse-success {
+            0% { background-color: #059669; }
+            50% { background-color: #10b981; }
+            100% { background-color: #059669; }
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Find Fake KFS</h1>
+            <p class="text-gray-600 dark:text-gray-400">Find the Fake KFS in the grid!</p>
+        </div>
+
+        <!-- Score Display -->
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-6 text-center">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <div class="text-2xl font-bold text-green-600" id="correct-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Correct</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-red-600" id="incorrect-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Incorrect</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-primary" id="total-score">0</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Total</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Grid -->
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-6">
+            <div id="game-grid" class="grid grid-cols-3 gap-0 max-w-md mx-auto">
+                <!-- Grid cells will be generated here -->
+            </div>
+        </div>
+
+
+
+        <!-- Feedback -->
+        <div id="feedback" class="text-center mb-6 min-h-[2rem]">
+            <!-- Feedback messages will appear here -->
+        </div>
+
+
+    </div>
+
+    <!-- Corner Buttons -->
+    <button id="answer-key-btn"
+        class="fixed top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+        onclick="showAnswerKey()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+    </button>
+
+    <!-- Answer Key Overlay -->
+    <div id="answer-overlay" class="overlay" style="display: none;">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-4xl max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">KFS Answer Key</h2>
+                <button onclick="hideAnswerKey()"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <img src="images/answer.png" alt="KFS Answer Key" class="w-full rounded-lg">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 text-center">
+                Images from ABU Robocon 2026 Rulebook V.0 Appendix 4.3 - Kung Fu Scroll Recognition Patterns<br>
+                This game is developed by Dicaprio, a graduated HKUST Robocon 2024 Software Senior
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode setup
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Game state
+        let gameState = {
+            correctScore: 0,
+            incorrectScore: 0,
+            gameActive: false,
+            grid: Array(12).fill(null), // 3x4 grid
+            fakeKFSPosition: null
+        };
+
+        // Create image sets
+        const imageSet = {
+            'R1 KFS': [],
+            'R2 KFS': [],
+            'Fake KFS': []
+        };
+
+        //const basePath = "./images/";
+        const basePath = "https://hkust-robocon.github.io/Robocon-2026-KFS-Guessing-Game/images/";
+
+        // Populate image sets separately for red and blue
+        const imageSetRed = {
+            'R1 KFS': [],
+            'R2 KFS': [],
+            'Fake KFS': []
+        };
+        const imageSetBlue = {
+            'R1 KFS': [],
+            'R2 KFS': [],
+            'Fake KFS': []
+        };
+
+        // Populate R1 KFS images
+        for (let i = 1; i <= 1; i++) {
+            imageSetRed['R1 KFS'].push(`${basePath}R1 KFS/R1 Red${i}.png`);
+            imageSetBlue['R1 KFS'].push(`${basePath}R1 KFS/R1 Blue${i}.png`);
+        }
+
+        // Populate R2 KFS images
+        for (let i = 1; i <= 15; i++) {
+            imageSetRed['R2 KFS'].push(`${basePath}R2 KFS/R2 Red${i}.png`);
+            imageSetBlue['R2 KFS'].push(`${basePath}R2 KFS/R2 Blue${i}.png`);
+        }
+
+        // Populate Fake KFS images
+        for (let i = 1; i <= 15; i++) {
+            imageSetRed['Fake KFS'].push(`${basePath}Fake KFS/Fake Red${i}.png`);
+            imageSetBlue['Fake KFS'].push(`${basePath}Fake KFS/Fake Blue${i}.png`);
+        }
+
+        // Current round color scheme
+        let currentImageSet = imageSetRed;
+
+        function getRandomImage(type) {
+            const images = currentImageSet[type];
+            return images[Math.floor(Math.random() * images.length)];
+        }
+
+        function createGrid() {
+            const gridContainer = document.getElementById('game-grid');
+            gridContainer.innerHTML = '';
+
+            for (let i = 0; i < 12; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => handleCellClick(i));
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        function populateGrid() {
+            // Reset grid
+            gameState.grid = Array(12).fill(null);
+            
+            // Choose color scheme for this round (all red or all blue)
+            currentImageSet = Math.random() < 0.5 ? imageSetRed : imageSetBlue;
+            
+            // Get middle cells to avoid for R1 KFS (center column middle rows)
+            const middleCells = [4, 7]; // positions (1,1) and (2,1) in 3x4 grid
+            
+            // Get available positions for R1 KFS (not middle cells)
+            let availableForR1 = [];
+            for (let i = 0; i < 12; i++) {
+                if (!middleCells.includes(i)) {
+                    availableForR1.push(i);
+                }
+            }
+            
+            // Place 3 R1 KFS images
+            for (let i = 0; i < 3; i++) {
+                const randomIndex = Math.floor(Math.random() * availableForR1.length);
+                const position = availableForR1.splice(randomIndex, 1)[0];
+                gameState.grid[position] = {
+                    type: 'R1 KFS',
+                    image: getRandomImage('R1 KFS')
+                };
+            }
+            
+            // Get available positions for Fake KFS (not bottom row, not occupied)
+            let availableForFake = [];
+            for (let i = 0; i < 9; i++) { // Skip bottom row (positions 9, 10, 11)
+                if (gameState.grid[i] === null) {
+                    availableForFake.push(i);
+                }
+            }
+            
+            // Place 1 Fake KFS image
+            const fakePosition = availableForFake[Math.floor(Math.random() * availableForFake.length)];
+            gameState.grid[fakePosition] = {
+                type: 'Fake KFS',
+                image: getRandomImage('Fake KFS')
+            };
+            gameState.fakeKFSPosition = fakePosition;
+            
+            // Get remaining available positions for R2 KFS
+            let availableForR2 = [];
+            for (let i = 0; i < 12; i++) {
+                if (gameState.grid[i] === null) {
+                    availableForR2.push(i);
+                }
+            }
+            
+            // Place 4 R2 KFS images
+            for (let i = 0; i < 4 && availableForR2.length > 0; i++) {
+                const randomIndex = Math.floor(Math.random() * availableForR2.length);
+                const position = availableForR2.splice(randomIndex, 1)[0];
+                gameState.grid[position] = {
+                    type: 'R2 KFS',
+                    image: getRandomImage('R2 KFS')
+                };
+            }
+            
+            // Update visual grid
+            updateGridDisplay();
+        }
+
+        function updateGridDisplay() {
+            const cells = document.querySelectorAll('.grid-cell');
+            const isRedScheme = currentImageSet === imageSetRed;
+            const gridContainer = document.getElementById('game-grid').parentElement;
+            
+            // Update container background color based on image scheme
+            if (isRedScheme) {
+                gridContainer.style.backgroundColor = 'rgb(236, 162, 151)';
+            } else {
+                gridContainer.style.backgroundColor = 'rgb(128, 191, 209)';
+            }
+            
+            cells.forEach((cell, index) => {
+                const gridItem = gameState.grid[index];
+                if (gridItem) {
+                    cell.innerHTML = `<img src="${gridItem.image}" alt="${gridItem.type}">`;
+                } else {
+                    cell.innerHTML = '';
+                }
+                
+                // Reset all cell styles and remove any previous classes
+                cell.className = 'grid-cell';
+                cell.classList.remove('correct', 'clicked', 'shake');
+                
+                // Apply dynamic coloring for specific cells
+                if (index === 4) { // User cell 8
+                    cell.style.backgroundColor = 'rgb(152, 166, 80)'; // Always light olive
+                } else if (index === 6) { // User cell 4
+                    if (isRedScheme) {
+                        cell.style.backgroundColor = 'rgb(152, 166, 80)'; // Light olive
+                    } else {
+                        cell.style.backgroundColor = 'rgb(41, 82, 16)'; // Dark green
+                    }
+                } else if (index === 8) { // User cell 6
+                    if (isRedScheme) {
+                        cell.style.backgroundColor = 'rgb(41, 82, 16)'; // Dark green
+                    } else {
+                        cell.style.backgroundColor = 'rgb(152, 166, 80)'; // Light olive
+                    }
+                }
+            });
+        }
+
+        function handleCellClick(position) {
+            if (!gameState.gameActive) return;
+            
+            const cell = document.querySelector(`[data-index="${position}"]`);
+            const gridItem = gameState.grid[position];
+            
+            gameState.gameActive = false;
+            
+            if (position === gameState.fakeKFSPosition) {
+                // Correct guess
+                gameState.correctScore++;
+                cell.classList.add('correct');
+                showFeedback('🎉 Correct! You found the Fake KFS!', true);
+            } else {
+                // Wrong guess
+                gameState.incorrectScore++;
+                cell.classList.add('clicked');
+                cell.classList.add('shake');
+                
+                // Highlight the correct cell
+                const correctCell = document.querySelector(`[data-index="${gameState.fakeKFSPosition}"]`);
+                correctCell.classList.add('correct');
+                
+                if (gridItem) {
+                    showFeedback(`❌ Wrong! The Fake KFS was in another cell. You clicked on ${gridItem.type}.`, false);
+                } else {
+                    showFeedback('❌ Wrong! You clicked on an empty cell. The Fake KFS was in another cell.', false);
+                }
+            }
+            
+            updateScore();
+            
+            // Start new game automatically after 1 second
+            setTimeout(() => {
+                startNewGame();
+            }, 1000);
+        }
+
+        function showFeedback(message, isCorrect) {
+            const feedbackEl = document.getElementById('feedback');
+            feedbackEl.innerHTML = `
+                <div class="text-lg font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function updateScore() {
+            document.getElementById('correct-score').textContent = gameState.correctScore;
+            document.getElementById('incorrect-score').textContent = gameState.incorrectScore;
+            document.getElementById('total-score').textContent = gameState.correctScore + gameState.incorrectScore;
+        }
+
+        function startNewGame() {
+            document.getElementById('feedback').innerHTML = '';
+            populateGrid();
+            gameState.gameActive = true;
+        }
+
+        // Overlay functions
+        function showAnswerKey() {
+            document.getElementById('answer-overlay').style.display = 'flex';
+        }
+
+        function hideAnswerKey() {
+            document.getElementById('answer-overlay').style.display = 'none';
+        }
+
+        // Close overlay when clicking outside
+        document.getElementById('answer-overlay').addEventListener('click', function (e) {
+            if (e.target === this) hideAnswerKey();
+        });
+
+        // Initialize game
+        createGrid();
+        updateScore();
+        startNewGame();
+    </script>
+</body>
+
+</html>
